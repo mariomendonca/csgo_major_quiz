@@ -1,112 +1,140 @@
-import Image from 'next/image'
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import { STARTED_TIME, majorData as data } from './constants'
 
 export default function Home() {
+  function onStart() {
+    const startedTime = localStorage.getItem(STARTED_TIME)
+    console.log('type', typeof startedTime)
+    if (startedTime) {
+      console.log('date', new Date(Number(startedTime)))
+    }
+    console.log('date', startedTime)
+  }
+
+  function startGame() {
+    const startedTime = localStorage.getItem(STARTED_TIME)
+    if (!startedTime) {
+      localStorage.setItem(STARTED_TIME, new Date().getTime().toString())
+    }
+
+    setSeconds(prev => prev - 1)
+    setHasStarted(true)
+  }
+
+  const [seconds, setSeconds] = useState<number>(900)
+  const [player, setPlayer] = useState('')
+  const [majorData, setMajorData] = useState(data)
+  const [isFinished, setIsFinished] = useState<boolean>(false)
+  const [hasStarted, setHasStarted] = useState<boolean>(false)
+
+  useEffect(() => {
+    onStart()
+  }, [])
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
+    if (!player) {
+      return
+    }
+
+    if (!hasStarted) {
+      console.log('game starting')
+      startGame()
+    }
+
+    console.log('Submit')
+    handleFindPlayer(player)
+  }
+
+  function handleFindPlayer(name: string) {
+    const newArray = majorData.map(major => {
+      major.teams = major.teams.map(team => {
+        team.players = team.players.map(item => {
+          if (item.name === name && !item.wasFound) {
+            item.wasFound = true
+            setPlayer('')
+          }
+
+          return item
+        })
+        return team
+      })
+      return major
+    })
+
+    setMajorData(newArray)
+  }
+
+  function addLeadingZero(number: number) {
+    return number.toString().padStart(2, '0')
+  }
+
+  function getSecondsDifference(date1: Date, date2: Date) {
+    const diffInMilliseconds = Math.abs(date2.getTime() - date1.getTime())
+    return Math.floor(diffInMilliseconds / 1000)
+  }
+
+  useEffect(() => {
+    function updateTimer() {
+      if (!hasStarted) return
+
+      setTimeout(() => {
+        if (seconds === 0) {
+          setIsFinished(true)
+          return
+        }
+        setSeconds(prevState => prevState - 1)
+      }, 1000)
+    }
+
+    updateTimer()
+  }, [hasStarted, seconds])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className='w-screen h-screen items-center bg-slate-500 flex flex-col'>
+      <div className='flex items-center my-10 justify-around w-full'>
+        <div>
+          <p className='font-semibold text-3xl text-orange-500'>
+            {addLeadingZero(Math.floor(seconds / 60))} : {addLeadingZero(seconds % 60)}
+          </p>
         </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            className='p-2 border-orange-500 border-2 outline-none rounded-lg mr-2'
+            type="text"
+            onChange={(e) =>
+              setPlayer(e.target.value)}
+            value={player}
+            placeholder='Enter a player name...'
+          />
+          <button className='p-2 bg-orange-500 rounded-lg text-slate-500 hover:bg-orange-800' type="submit" >submit</button>
+        </form>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      <div className='flex flex-col overflow-scroll w-full px-10 pb-10'>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+        {majorData.map(major => (
+          <div key={major.title} className='w-full border-2 border-orange-500 rounded-lg p-10 mb-6'>
+            <h4 className='text-orange-600 font-bold text-xl'>{major.title}</h4>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+            <h6>{major.teams.map(team => (
+              <div key={team.name} className='border-2 border-orange-500 p-5 mt-5 rounded-lg w-1/4'>
+                <p className='text-lg font-semibold text-orange-500'>{team.name}</p>
+                <ul>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+                  {team.players.map((playerName, index) => (
+                    <li key={index}>
+                      <p className='font-medium text-orange-500'>{playerName.wasFound ? playerName.name : '----------'}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}</h6>
+          </div>
+        ))}
       </div>
     </main>
   )
