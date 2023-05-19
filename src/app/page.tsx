@@ -4,34 +4,38 @@ import React, { useEffect, useState } from 'react'
 import { STARTED_TIME, majorData as data } from './constants'
 
 export default function Home() {
-  function onStart() {
-    const startedTime = localStorage.getItem(STARTED_TIME)
-    console.log('type', typeof startedTime)
-    if (startedTime) {
-      console.log('date', new Date(Number(startedTime)))
-    }
-    console.log('date', startedTime)
-  }
-
-  function startGame() {
-    const startedTime = localStorage.getItem(STARTED_TIME)
-    if (!startedTime) {
-      localStorage.setItem(STARTED_TIME, new Date().getTime().toString())
-    }
-
-    setSeconds(prev => prev - 1)
-    setHasStarted(true)
-  }
-
   const [seconds, setSeconds] = useState<number>(900)
   const [player, setPlayer] = useState('')
   const [majorData, setMajorData] = useState(data)
   const [isFinished, setIsFinished] = useState<boolean>(false)
   const [hasStarted, setHasStarted] = useState<boolean>(false)
 
-  useEffect(() => {
-    onStart()
-  }, [])
+  function onStart() {
+    const hasStartedTime = localStorage.getItem(STARTED_TIME)
+
+    if (hasStartedTime) {
+      const startedTime = new Date(Number(hasStartedTime))
+      const secondsDifference = getSecondsDifference(startedTime, new Date())
+      if (secondsDifference <= 0) {
+        setSeconds(900)
+        setHasStarted(false)
+        localStorage.removeItem(STARTED_TIME)
+      }
+
+      setSeconds(900 - secondsDifference)
+      setHasStarted(true)
+    }
+  }
+
+  function startGame() {
+    const hasStartedTime = localStorage.getItem(STARTED_TIME)
+    if (!hasStartedTime) {
+      localStorage.setItem(STARTED_TIME, new Date().getTime().toString())
+    }
+
+    setSeconds(prev => prev - 1)
+    setHasStarted(true)
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -74,22 +78,27 @@ export default function Home() {
 
   function getSecondsDifference(date1: Date, date2: Date) {
     const diffInMilliseconds = Math.abs(date2.getTime() - date1.getTime())
+    console.log('aaaa', Math.floor(diffInMilliseconds / 1000))
     return Math.floor(diffInMilliseconds / 1000)
   }
 
+  function updateTimer() {
+    if (!hasStarted) return
+
+    setTimeout(() => {
+      if (seconds === 0) {
+        setIsFinished(true)
+        return
+      }
+      setSeconds(prevState => prevState - 1)
+    }, 1000)
+  }
+
   useEffect(() => {
-    function updateTimer() {
-      if (!hasStarted) return
+    onStart()
+  }, [])
 
-      setTimeout(() => {
-        if (seconds === 0) {
-          setIsFinished(true)
-          return
-        }
-        setSeconds(prevState => prevState - 1)
-      }, 1000)
-    }
-
+  useEffect(() => {
     updateTimer()
   }, [hasStarted, seconds])
 
@@ -118,7 +127,7 @@ export default function Home() {
 
         {majorData.map(major => (
           <div key={major.title} className='w-full border-2 border-orange-500 rounded-lg p-10 mb-6'>
-            <h4 className='text-orange-600 font-bold text-xl'>{major.title}</h4>
+            <h4 className='text-orange-500 font-bold text-xl'>{major.title}</h4>
 
             <h6>{major.teams.map(team => (
               <div key={team.name} className='border-2 border-orange-500 p-5 mt-5 rounded-lg w-1/4'>
